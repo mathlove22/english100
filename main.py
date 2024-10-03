@@ -105,12 +105,14 @@ sentences = [
     {"number": 100, "english": "I can jump high.", "korean": "나는 높이 뛸 수 있어."},
 ]
 
+
 # 2. 문장에서 랜덤으로 단어를 빈칸으로 만드는 함수
 def create_blank_sentence(sentence):
     words = sentence.split()
     random_index = random.randint(0, len(words) - 1)
     correct_answer = words[random_index]
-    words[random_index] = "_____"
+    blank_length = len(correct_answer)
+    words[random_index] = "_" * blank_length
     blank_sentence = " ".join(words)
     return blank_sentence, correct_answer
 
@@ -126,8 +128,6 @@ def initialize_session_state():
         st.session_state.total_attempts = 0
     if "correct_attempts" not in st.session_state:
         st.session_state.correct_attempts = 0
-    if "new_question" not in st.session_state:
-        st.session_state.new_question = False
     if "input_key" not in st.session_state:
         st.session_state.input_key = 0
 
@@ -138,7 +138,6 @@ def load_new_question():
     st.session_state.current_sentence = sentence
     st.session_state.blank_sentence = blank_sentence
     st.session_state.correct_answer = correct_answer
-    st.session_state.new_question = True
     st.session_state.input_key += 1  # 입력 필드의 키를 변경
 
 # 5. 웹앱 인터페이스 만들기
@@ -149,9 +148,8 @@ def main():
     st.write("문장의 빈칸을 채워보세요.")
 
     # 새로운 문제를 처음 로드하거나 사용자가 '다음 문제' 버튼을 클릭하면 새로운 문제 생성
-    if st.session_state.current_sentence is None or st.session_state.new_question:
+    if st.session_state.current_sentence is None or st.button("다음 문제"):
         load_new_question()
-        st.session_state.new_question = False
 
     # 한글 번역 제공
     st.write(f"번역: {st.session_state.current_sentence['korean']}")
@@ -178,11 +176,6 @@ def main():
     if st.session_state.total_attempts > 0:
         score_percentage = (st.session_state.correct_attempts / st.session_state.total_attempts) * 100
         st.write(f"퍼센트 점수: {score_percentage:.2f}점")
-
-    # '다음 문제' 버튼
-    if st.button("다음 문제"):
-        load_new_question()
-        st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
