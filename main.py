@@ -112,7 +112,7 @@ def create_blank_sentence(sentence):
     random_index = random.randint(0, len(words) - 1)
     correct_answer = words[random_index]
     blank_length = len(correct_answer)
-    words[random_index] = "_" * blank_length
+    words[random_index] = "□" * blank_length
     blank_sentence = " ".join(words)
     return blank_sentence, correct_answer
 
