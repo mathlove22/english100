@@ -84,13 +84,15 @@ def main():
         
         # 문장 범위 선택
         sentence_range = st.slider("문장 범위를 선택하세요", 1, 100, (1, 10))
-        goal_num_questions = st.number_input("맞추고 싶은 문제 수", min_value=1, value=10)
-        goal_score = st.number_input("목표 점수", min_value=1, value=70)
+        goal_num_questions = st.number_input("풀고 싶은 문제 수", min_value=1, value=10)
+        goal_score = st.number_input("목표 정답 수", min_value=1, value=7)
         
         if st.button("시작하기"):
             # 유효성 검사 추가
             if not nickname.strip():
                 st.error("닉네임을 입력하세요.")
+            elif goal_score > goal_num_questions:
+                st.error("목표 정답 수는 문제 수를 초과할 수 없습니다.")
             else:
                 # 모든 정보가 입력되면 다음 화면으로 넘어감
                 st.session_state.screen = "question"
@@ -131,30 +133,32 @@ def main():
             else:
                 st.error(f"오답입니다. 정답은 '{st.session_state.correct_answer}'입니다.")
 
-        # 점수 표시
-        st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
-
-        # 목표 달성 여부 확인
-        if st.session_state.total_attempts >= st.session_state.goal_num_questions:
-            if st.session_state.correct_attempts >= st.session_state.goal_score:
+            # 목표 달성 여부 확인
+            if st.session_state.total_attempts >= st.session_state.goal_num_questions:
                 st.session_state.time_spent = time.time() - st.session_state.start_time
                 st.session_state.screen = "result"
                 st.rerun()  # 결과 화면으로 즉시 전환
 
+        # 점수 표시
+        st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
+        st.write(f"목표: {st.session_state.goal_num_questions}문제 중 {st.session_state.goal_score}개 정답")
+
     elif st.session_state.screen == "result":
         # 결과 화면
-        st.write("축하합니다! 목표를 달성했습니다.")
+        st.write("퀴즈가 종료되었습니다!")
         st.write(f"닉네임: {st.session_state.nickname}")
         st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
+        st.write(f"목표 달성: {'성공' if st.session_state.correct_attempts >= st.session_state.goal_score else '실패'}")
         st.write(f"걸린 시간: {st.session_state.time_spent:.2f}초")
         st.write(f"문장 범위: {st.session_state.sentence_range}")
         st.write(f"문제 수: {st.session_state.goal_num_questions}")
-        st.write(f"목표 점수: {st.session_state.goal_score}")
+        st.write(f"목표 정답 수: {st.session_state.goal_score}")
 
         # 결과를 JSON 파일에 저장
         result = {
             "nickname": st.session_state.nickname,
             "score": f"{st.session_state.correct_attempts}/{st.session_state.total_attempts}",
+            "goal_achieved": st.session_state.correct_attempts >= st.session_state.goal_score,
             "percentage": (st.session_state.correct_attempts / st.session_state.total_attempts) * 100,
             "time_spent": st.session_state.time_spent,
             "sentence_range": st.session_state.sentence_range,
@@ -163,7 +167,10 @@ def main():
         }
         save_results_to_json("results.json", result)
         
-        st.stop()
+        if st.button("다시 시작"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
 
 if __name__ == "__main__":
     main()
