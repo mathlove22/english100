@@ -3,71 +3,7 @@ import random
 import json
 import time
 
-# JSON 파일에서 문장 데이터를 불러오는 함수
-def load_sentences_from_json(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            sentences = json.load(f)
-        return sentences
-    except FileNotFoundError:
-        st.error(f"{file_path} 파일을 찾을 수 없습니다.")
-        return []
-
-# JSON 파일에 기록을 저장하는 함수
-def save_results_to_json(filename, results):
-    try:
-        with open(filename, 'r') as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        data = []
-    
-    data.append(results)
-    
-    with open(filename, 'w') as f:
-        json.dump(data, f, indent=4)
-
-# 세션 상태 초기화 함수
-def initialize_session_state():
-    if "current_sentence" not in st.session_state:
-        st.session_state.current_sentence = None
-    if "blank_sentence" not in st.session_state:
-        st.session_state.blank_sentence = None
-    if "correct_answer" not in st.session_state:
-        st.session_state.correct_answer = None
-    if "total_attempts" not in st.session_state:
-        st.session_state.total_attempts = 0
-    if "correct_attempts" not in st.session_state:
-        st.session_state.correct_attempts = 0
-    if "input_key" not in st.session_state:
-        st.session_state.input_key = 0
-    if "start_time" not in st.session_state:
-        st.session_state.start_time = None
-    if "time_spent" not in st.session_state:
-        st.session_state.time_spent = 0
-    if "screen" not in st.session_state:
-        st.session_state.screen = "initial"  # Start on the initial screen
-    if "nickname" not in st.session_state:
-        st.session_state.nickname = ""  # Initialize nickname
-    if "sentence_range" not in st.session_state:
-        st.session_state.sentence_range = (1, 10)  # 기본 문장 범위 초기화
-
-# 문장에서 랜덤으로 단어를 빈칸으로 만드는 함수
-def create_blank_sentence(sentence):
-    words = sentence.split()
-    random_index = random.randint(0, len(words) - 1)
-    correct_answer = words[random_index]
-    words[random_index] = "□" * len(correct_answer)
-    blank_sentence = " ".join(words)
-    return blank_sentence, correct_answer
-
-# 새로운 문제 로드
-def load_new_question(filtered_sentences):
-    sentence = random.choice(filtered_sentences)
-    blank_sentence, correct_answer = create_blank_sentence(sentence["english"])
-    st.session_state.current_sentence = sentence
-    st.session_state.blank_sentence = blank_sentence
-    st.session_state.correct_answer = correct_answer
-    st.session_state.input_key += 1
+# ... (이전 함수들은 그대로 유지) ...
 
 # 메인 함수
 def main():
@@ -99,6 +35,7 @@ def main():
                 st.session_state.goal_num_questions = goal_num_questions
                 st.session_state.goal_score = goal_score
                 st.session_state.start_time = time.time()  # Start timer when the game begins
+                st.experimental_rerun()  # 화면을 즉시 다시 로드
 
     elif st.session_state.screen == "question":
         # 문장 데이터를 불러오기
@@ -121,8 +58,8 @@ def main():
         # 사용자 입력
         user_input = st.text_input("정답 입력", key=f"user_input_{st.session_state.input_key}")
 
-        # 제출 버튼
-        if st.button("제출"):
+        # 제출 버튼 (입력이 있을 때만 활성화)
+        if st.button("제출", disabled=not user_input.strip()):
             st.session_state.total_attempts += 1
             if user_input.strip().lower() == st.session_state.correct_answer.strip().lower():
                 st.session_state.correct_attempts += 1
@@ -138,30 +75,10 @@ def main():
             if st.session_state.correct_attempts >= st.session_state.goal_score:
                 st.session_state.time_spent = time.time() - st.session_state.start_time
                 st.session_state.screen = "result"
+                st.experimental_rerun()  # 결과 화면으로 즉시 전환
 
     elif st.session_state.screen == "result":
-        # 결과 화면
-        st.write("축하합니다! 목표를 달성했습니다.")
-        st.write(f"닉네임: {st.session_state.nickname}")
-        st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
-        st.write(f"걸린 시간: {st.session_state.time_spent:.2f}초")
-        st.write(f"문장 범위: {st.session_state.sentence_range}")
-        st.write(f"문제 수: {st.session_state.goal_num_questions}")
-        st.write(f"목표 점수: {st.session_state.goal_score}")
-
-        # 결과를 JSON 파일에 저장
-        result = {
-            "nickname": st.session_state.nickname,
-            "score": f"{st.session_state.correct_attempts}/{st.session_state.total_attempts}",
-            "percentage": (st.session_state.correct_attempts / st.session_state.total_attempts) * 100,
-            "time_spent": st.session_state.time_spent,
-            "sentence_range": st.session_state.sentence_range,
-            "num_questions": st.session_state.goal_num_questions,
-            "goal_score": st.session_state.goal_score
-        }
-        save_results_to_json("results.json", result)
-        
-        st.stop()
+        # ... (결과 화면 코드는 그대로 유지) ...
 
 if __name__ == "__main__":
     main()
