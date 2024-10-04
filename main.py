@@ -108,7 +108,7 @@ def main():
         filtered_sentences = [s for s in sentences if st.session_state.sentence_range[0] <= s["number"] <= st.session_state.sentence_range[1]]
         
         # 새로운 문제를 로드
-        if st.session_state.current_sentence is None:
+        if st.session_state.current_sentence is None or st.button("다음 문제"):
             if len(filtered_sentences) > 0:
                 load_new_question(filtered_sentences)
             else:
@@ -121,8 +121,8 @@ def main():
         # 사용자 입력
         user_input = st.text_input("정답 입력", key=f"user_input_{st.session_state.input_key}")
 
-        # 사용자 입력이 변화할 때마다 체크
-        if user_input:
+        # 제출 버튼
+        if st.button("제출"):
             st.session_state.total_attempts += 1
             if user_input.strip().lower() == st.session_state.correct_answer.strip().lower():
                 st.session_state.correct_attempts += 1
@@ -130,16 +130,14 @@ def main():
             else:
                 st.error(f"오답입니다. 정답은 '{st.session_state.correct_answer}'입니다.")
 
-            # 다음 문제 로드
-            load_new_question(filtered_sentences)
-
         # 점수 표시
         st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
 
         # 목표 달성 여부 확인
         if st.session_state.total_attempts >= st.session_state.goal_num_questions:
-            st.session_state.time_spent = time.time() - st.session_state.start_time
-            st.session_state.screen = "result"
+            if st.session_state.correct_attempts >= st.session_state.goal_score:
+                st.session_state.time_spent = time.time() - st.session_state.start_time
+                st.session_state.screen = "result"
 
     elif st.session_state.screen == "result":
         # 결과 화면
