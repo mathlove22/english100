@@ -1,8 +1,7 @@
 import streamlit as st
 import random
-import pandas as pd
-import time
 import json
+import time
 
 # JSON 파일에서 문장 데이터를 불러오는 함수
 def load_sentences_from_json(file_path):
@@ -13,22 +12,19 @@ def load_sentences_from_json(file_path):
     except FileNotFoundError:
         st.error(f"{file_path} 파일을 찾을 수 없습니다.")
         return []
-    except json.JSONDecodeError as e:
-        st.error(f"JSON 디코딩 오류: {str(e)}")
-        return []
 
 # JSON 파일에 기록을 저장하는 함수
 def save_results_to_json(filename, results):
     try:
-        with open(filename, 'r', encoding='utf-8') as f:
+        with open(filename, 'r') as f:
             data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        data = []  # 파일이 없거나 JSON 형식이 잘못된 경우 빈 리스트로 초기화
+    except FileNotFoundError:
+        data = []
     
     data.append(results)
     
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4)
 
 # 세션 상태 초기화 함수
 def initialize_session_state():
@@ -48,6 +44,8 @@ def initialize_session_state():
         st.session_state.start_time = None
     if "time_spent" not in st.session_state:
         st.session_state.time_spent = 0
+    if "screen" not in st.session_state:
+        st.session_state.screen = "initial"  # Start on the initial screen
 
 # 문장에서 랜덤으로 단어를 빈칸으로 만드는 함수
 def create_blank_sentence(sentence):
@@ -59,11 +57,8 @@ def create_blank_sentence(sentence):
     return blank_sentence, correct_answer
 
 # 새로운 문제 로드
-def load_new_question(sentences):
-    if not sentences:
-        st.error("선택한 범위에 해당하는 문장이 없습니다. 범위를 다시 선택하세요.")
-        return
-    sentence = random.choice(sentences)
+def load_new_question(filtered_sentences):
+    sentence = random.choice(filtered_sentences)
     blank_sentence, correct_answer = create_blank_sentence(sentence["english"])
     st.session_state.current_sentence = sentence
     st.session_state.blank_sentence = blank_sentence
@@ -74,75 +69,86 @@ def load_new_question(sentences):
 def main():
     st.title("영어 학습: 빈칸 채우기")
     
-    # 문장 데이터를 불러오기
-    sentences = load_sentences_from_json('sentence03.json')
-    
     # 세션 상태 초기화
     initialize_session_state()
 
-    # 닉네임 입력
-    nickname = st.text_input("닉네임 입력", key="nickname")
-    
-    # 문장 범위 선택
-    sentence_range = st.slider("문장 범위를 선택하세요", 1, 100, (1, 10))
-    filtered_sentences = [s for s in sentences if sentence_range[0] <= s["number"] <= sentence_range[1]]
-    
-    # 필터링된 문장이 없는 경우
-    if not filtered_sentences:
-        st.warning(f"선택한 범위({sentence_range[0]} ~ {sentence_range[1]})에 해당하는 문장이 없습니다. 범위를 다시 선택하세요.")
-        return
+    # 화면에 따라 다르게 처리
+    if st.session_state.screen == "initial":
+        # 초기 화면
+        st.write("이름, 문장 범위, 문제 수, 목표 점수를 입력하세요.")
+        nickname = st.text_input("닉네임 입력", key="nickname")
+        
+        # 문장 범위 선택
+        sentence_range = st.slider("문장 범위를 선택하세요", 1, 100, (1, 10))
+        goal_num_questions = st.number_input("맞추고 싶은 문제 수", min_value=1, value=10)
+        goal_score = st.number_input("목표 점수", min_value=1, value=70)
+        
+        if st.button("시작하기"):
+            # 모든 정보가 입력되면 다음 화면으로 넘어감
+            st.session_state.screen = "question"
+            st.session_state.nickname = nickname
+            st.session_state.sentence_range = sentence_range
+            st.session_state.goal_num_questions = goal_num_questions
+            st.session_state.goal_score = goal_score
 
-    # 목표 설정
-    goal_num_questions = st.number_input("맞추고 싶은 문제 수", min_value=1, value=10)
-    goal_score = st.number_input("목표 점수", min_value=1, value=70)
+    elif st.session_state.screen == "question":
+        # 문장 데이터를 불러오기
+        sentences = load_sentences_from_json('sentence03.json')
+        
+        # 선택한 범위에 따라 문장 필터링
+        filtered_sentences = [s for s in sentences if st.session_state.sentence_range[0] <= s["number"] <= st.session_state.sentence_range[1]]
+        
+        # 새로운 문제를 로드
+        if st.session_state.current_sentence is None or st.button("다음 문제"):
+            if len(filtered_sentences) > 0:
+                load_new_question(filtered_sentences)
+            else:
+                st.error("선택한 범위에 문장이 없습니다.")
 
-    # 타이머 시작
-    if st.session_state.start_time is None:
-        st.session_state.start_time = time.time()
-    
-    # 새로운 문제를 로드
-    if st.session_state.current_sentence is None or st.button("다음 문제"):
-        load_new_question(filtered_sentences)
-
-    # 문제와 번역 표시
-    if st.session_state.current_sentence:
+        # 문제와 번역 표시
         st.write(f"번역: {st.session_state.current_sentence['korean']}")
         st.write(f"문장: {st.session_state.blank_sentence}")
-    else:
-        st.warning("문제를 불러오지 못했습니다. 다시 시도하세요.")
-    
-    # 사용자 입력
-    user_input = st.text_input("정답 입력", key=f"user_input_{st.session_state.input_key}")
-    
-    # 제출 버튼
-    if st.button("제출") and st.session_state.correct_answer:
-        st.session_state.total_attempts += 1
-        if user_input.strip().lower() == st.session_state.correct_answer.strip().lower():
-            st.session_state.correct_attempts += 1
-            st.success("정답입니다!")
-        else:
-            st.error(f"오답입니다. 정답은 '{st.session_state.correct_answer}'입니다.")
-    
-    # 점수 표시
-    st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
-    
-    # 퍼센트 점수 표시
-    if st.session_state.total_attempts > 0:
-        score_percentage = (st.session_state.correct_attempts / st.session_state.total_attempts) * 100
-        st.write(f"퍼센트 점수: {score_percentage:.2f}점")
-    
-    # 목표 달성 여부 확인
-    if st.session_state.correct_attempts >= goal_num_questions and score_percentage >= goal_score:
-        st.success("목표 달성!")
-        st.session_state.time_spent = time.time() - st.session_state.start_time
+
+        # 사용자 입력
+        user_input = st.text_input("정답 입력", key=f"user_input_{st.session_state.input_key}")
+
+        # 제출 버튼
+        if st.button("제출"):
+            st.session_state.total_attempts += 1
+            if user_input.strip().lower() == st.session_state.correct_answer.strip().lower():
+                st.session_state.correct_attempts += 1
+                st.success("정답입니다!")
+            else:
+                st.error(f"오답입니다. 정답은 '{st.session_state.correct_answer}'입니다.")
+
+        # 점수 표시
+        st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
+
+        # 목표 달성 여부 확인
+        if st.session_state.total_attempts >= st.session_state.goal_num_questions:
+            if st.session_state.correct_attempts >= st.session_state.goal_score:
+                st.session_state.time_spent = time.time() - st.session_state.start_time
+                st.session_state.screen = "result"
+
+    elif st.session_state.screen == "result":
+        # 결과 화면
+        st.write("축하합니다! 목표를 달성했습니다.")
+        st.write(f"닉네임: {st.session_state.nickname}")
+        st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
         st.write(f"걸린 시간: {st.session_state.time_spent:.2f}초")
-        
+        st.write(f"문장 범위: {st.session_state.sentence_range}")
+        st.write(f"문제 수: {st.session_state.goal_num_questions}")
+        st.write(f"목표 점수: {st.session_state.goal_score}")
+
         # 결과를 JSON 파일에 저장
         result = {
-            "nickname": nickname,
+            "nickname": st.session_state.nickname,
             "score": f"{st.session_state.correct_attempts}/{st.session_state.total_attempts}",
-            "percentage": score_percentage,
-            "time_spent": st.session_state.time_spent
+            "percentage": (st.session_state.correct_attempts / st.session_state.total_attempts) * 100,
+            "time_spent": st.session_state.time_spent,
+            "sentence_range": st.session_state.sentence_range,
+            "num_questions": st.session_state.goal_num_questions,
+            "goal_score": st.session_state.goal_score
         }
         save_results_to_json("results.json", result)
         
@@ -150,4 +156,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
