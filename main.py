@@ -143,7 +143,7 @@ def main():
         st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
         st.write(f"목표: {st.session_state.goal_num_questions}문제 중 {st.session_state.goal_score}개 정답")
 
-   elif st.session_state.screen == "result":
+    elif st.session_state.screen == "result":  # 여기가 수정된 부분
         # 결과 화면
         st.balloons()  # 축하 효과
         st.title("🎉 퀴즈 결과 🎉")
