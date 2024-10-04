@@ -143,23 +143,45 @@ def main():
         st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
         st.write(f"목표: {st.session_state.goal_num_questions}문제 중 {st.session_state.goal_score}개 정답")
 
-    elif st.session_state.screen == "result":
+   elif st.session_state.screen == "result":
         # 결과 화면
-        st.write("퀴즈가 종료되었습니다!")
-        st.write(f"닉네임: {st.session_state.nickname}")
-        st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
-        st.write(f"목표 달성: {'성공' if st.session_state.correct_attempts >= st.session_state.goal_score else '실패'}")
-        st.write(f"걸린 시간: {st.session_state.time_spent:.2f}초")
-        st.write(f"문장 범위: {st.session_state.sentence_range}")
-        st.write(f"문제 수: {st.session_state.goal_num_questions}")
-        st.write(f"목표 정답 수: {st.session_state.goal_score}")
+        st.balloons()  # 축하 효과
+        st.title("🎉 퀴즈 결과 🎉")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("닉네임", st.session_state.nickname)
+            st.metric("총 문제 수", st.session_state.goal_num_questions)
+            st.metric("목표 정답 수", st.session_state.goal_score)
+        
+        with col2:
+            correct_ratio = st.session_state.correct_attempts / st.session_state.total_attempts
+            percentage_score = correct_ratio * 100
+            st.metric("정답률", f"{percentage_score:.1f}%")
+            st.metric("걸린 시간", f"{st.session_state.time_spent:.1f}초")
+            goal_achieved = st.session_state.correct_attempts >= st.session_state.goal_score
+            st.metric("목표 달성", "성공 🏆" if goal_achieved else "실패 😢")
 
+        st.progress(correct_ratio)
+        
+        st.write("---")
+        st.subheader("상세 결과")
+        st.write(f"문장 범위: {st.session_state.sentence_range[0]} ~ {st.session_state.sentence_range[1]}")
+        st.write(f"맞춘 문제 수: {st.session_state.correct_attempts} / {st.session_state.total_attempts}")
+        
+        # 백분위 점수 계산 (간단한 방식으로 구현)
+        percentile = min(100, max(0, int((percentage_score - 50) * 2)))
+        st.write(f"백분위 점수: {percentile}%")
+        st.info(f"당신의 점수는 상위 {100-percentile}%에 해당합니다.")
+        
         # 결과를 JSON 파일에 저장
         result = {
             "nickname": st.session_state.nickname,
             "score": f"{st.session_state.correct_attempts}/{st.session_state.total_attempts}",
-            "goal_achieved": st.session_state.correct_attempts >= st.session_state.goal_score,
-            "percentage": (st.session_state.correct_attempts / st.session_state.total_attempts) * 100,
+            "goal_achieved": goal_achieved,
+            "percentage": percentage_score,
+            "percentile": percentile,
             "time_spent": st.session_state.time_spent,
             "sentence_range": st.session_state.sentence_range,
             "num_questions": st.session_state.goal_num_questions,
@@ -167,7 +189,7 @@ def main():
         }
         save_results_to_json("results.json", result)
         
-        if st.button("다시 시작"):
+        if st.button("다시 시작", key="restart_button"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
