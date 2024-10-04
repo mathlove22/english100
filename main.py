@@ -99,7 +99,7 @@ def main():
                 st.session_state.goal_num_questions = goal_num_questions
                 st.session_state.goal_score = goal_score
                 st.session_state.start_time = time.time()  # Start timer when the game begins
-                st.experimental_rerun()  # 화면을 즉시 다시 로드
+                st.rerun()  # 화면을 즉시 다시 로드
 
     elif st.session_state.screen == "question":
         # 문장 데이터를 불러오기
@@ -139,7 +139,7 @@ def main():
             if st.session_state.correct_attempts >= st.session_state.goal_score:
                 st.session_state.time_spent = time.time() - st.session_state.start_time
                 st.session_state.screen = "result"
-                st.experimental_rerun()  # 결과 화면으로 즉시 전환
+                st.rerun()  # 결과 화면으로 즉시 전환
 
     elif st.session_state.screen == "result":
         # 결과 화면
