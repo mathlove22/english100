@@ -1,26 +1,28 @@
 import streamlit as st
 import random
+import pandas as pd
+import time
 import json
 
-# 1. JSON 파일에서 문장 데이터를 불러오는 함수
-def load_sentences_from_json(file_path):
-    with open(file_path, 'r') as f:
-        sentences = json.load(f)
-    return sentences
+# CSV 또는 JSON 파일에서 문장 데이터를 불러오는 함수
+def load_sentences_from_csv(file_path):
+    df = pd.read_csv(file_path)
+    return df.to_dict(orient='records')
 
-sentences = load_sentences_from_json('sentence03.json')
+# JSON 파일에 기록을 저장하는 함수
+def save_results_to_json(filename, results):
+    try:
+        with open(filename, 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = []
+    
+    data.append(results)
+    
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4)
 
-# 2. 문장에서 랜덤으로 단어를 빈칸으로 만드는 함수
-def create_blank_sentence(sentence):
-    words = sentence.split()
-    random_index = random.randint(0, len(words) - 1)
-    correct_answer = words[random_index]
-    blank_length = len(correct_answer)
-    words[random_index] = "□" * blank_length
-    blank_sentence = " ".join(words)
-    return blank_sentence, correct_answer
-
-# 3. 세션 상태 초기화
+# 세션 상태 초기화 함수
 def initialize_session_state():
     if "current_sentence" not in st.session_state:
         st.session_state.current_sentence = None
@@ -34,36 +36,65 @@ def initialize_session_state():
         st.session_state.correct_attempts = 0
     if "input_key" not in st.session_state:
         st.session_state.input_key = 0
+    if "start_time" not in st.session_state:
+        st.session_state.start_time = None
+    if "time_spent" not in st.session_state:
+        st.session_state.time_spent = 0
 
-# 4. 새로운 문제를 로드하는 함수
-def load_new_question():
+# 문장에서 랜덤으로 단어를 빈칸으로 만드는 함수
+def create_blank_sentence(sentence):
+    words = sentence.split()
+    random_index = random.randint(0, len(words) - 1)
+    correct_answer = words[random_index]
+    words[random_index] = "□" * len(correct_answer)
+    blank_sentence = " ".join(words)
+    return blank_sentence, correct_answer
+
+# 새로운 문제 로드
+def load_new_question(sentences):
     sentence = random.choice(sentences)
     blank_sentence, correct_answer = create_blank_sentence(sentence["english"])
     st.session_state.current_sentence = sentence
     st.session_state.blank_sentence = blank_sentence
     st.session_state.correct_answer = correct_answer
-    st.session_state.input_key += 1  # 입력 필드의 키를 변경
+    st.session_state.input_key += 1
 
-# 5. 웹앱 인터페이스 만들기
+# 메인 함수
 def main():
+    st.title("영어 학습: 빈칸 채우기")
+    
+    # 문장 데이터를 불러오기
+    sentences = load_sentences_from_csv('sentences.csv')
+    
+    # 세션 상태 초기화
     initialize_session_state()
 
-    st.title("영어 학습: 빈칸 채우기")
-    st.write("문장의 빈칸을 채워보세요.")
+    # 닉네임 입력
+    nickname = st.text_input("닉네임 입력", key="nickname")
+    
+    # 문장 범위 선택
+    sentence_range = st.slider("문장 범위를 선택하세요", 1, 100, (1, 10))
+    filtered_sentences = [s for s in sentences if sentence_range[0] <= s["number"] <= sentence_range[1]]
+    
+    # 목표 설정
+    goal_num_questions = st.number_input("맞추고 싶은 문제 수", min_value=1, value=10)
+    goal_score = st.number_input("목표 점수", min_value=1, value=70)
 
-    # 새로운 문제를 처음 로드하거나 사용자가 '다음 문제' 버튼을 클릭하면 새로운 문제 생성
+    # 타이머 시작
+    if st.session_state.start_time is None:
+        st.session_state.start_time = time.time()
+    
+    # 새로운 문제를 로드
     if st.session_state.current_sentence is None or st.button("다음 문제"):
-        load_new_question()
+        load_new_question(filtered_sentences)
 
-    # 한글 번역 제공
+    # 문제와 번역 표시
     st.write(f"번역: {st.session_state.current_sentence['korean']}")
-
-    # 빈칸이 있는 문장 표시
     st.write(f"문장: {st.session_state.blank_sentence}")
-
-    # 사용자 입력 받기 (동적 키 사용)
+    
+    # 사용자 입력
     user_input = st.text_input("정답 입력", key=f"user_input_{st.session_state.input_key}")
-
+    
     # 제출 버튼
     if st.button("제출"):
         st.session_state.total_attempts += 1
@@ -71,15 +102,32 @@ def main():
             st.session_state.correct_attempts += 1
             st.success("정답입니다!")
         else:
-            st.error(f"오답입니다. 정답은 '{st.session_state.correct_answer}' 입니다.")
-
+            st.error(f"오답입니다. 정답은 '{st.session_state.correct_answer}'입니다.")
+    
     # 점수 표시
     st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
-
+    
     # 퍼센트 점수 표시
     if st.session_state.total_attempts > 0:
         score_percentage = (st.session_state.correct_attempts / st.session_state.total_attempts) * 100
         st.write(f"퍼센트 점수: {score_percentage:.2f}점")
+    
+    # 목표 달성 여부 확인
+    if st.session_state.correct_attempts >= goal_num_questions and score_percentage >= goal_score:
+        st.success("목표 달성!")
+        st.session_state.time_spent = time.time() - st.session_state.start_time
+        st.write(f"걸린 시간: {st.session_state.time_spent:.2f}초")
+        
+        # 결과를 JSON 파일에 저장
+        result = {
+            "nickname": nickname,
+            "score": f"{st.session_state.correct_attempts}/{st.session_state.total_attempts}",
+            "percentage": score_percentage,
+            "time_spent": st.session_state.time_spent
+        }
+        save_results_to_json("results.json", result)
+        
+        st.stop()
 
 if __name__ == "__main__":
     main()
