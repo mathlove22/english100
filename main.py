@@ -121,14 +121,17 @@ def main():
         # 사용자 입력
         user_input = st.text_input("정답 입력", key=f"user_input_{st.session_state.input_key}")
 
-        # 제출 버튼
-        if st.button("제출"):
+        # 사용자 입력이 변화할 때마다 체크
+        if user_input and st.session_state.current_sentence:
             st.session_state.total_attempts += 1
             if user_input.strip().lower() == st.session_state.correct_answer.strip().lower():
                 st.session_state.correct_attempts += 1
                 st.success("정답입니다!")
             else:
                 st.error(f"오답입니다. 정답은 '{st.session_state.correct_answer}'입니다.")
+
+            # 다음 문제 로드
+            load_new_question(filtered_sentences)
 
         # 점수 표시
         st.write(f"점수: {st.session_state.correct_attempts}/{st.session_state.total_attempts}")
