@@ -48,6 +48,8 @@ def initialize_session_state():
         st.session_state.screen = "initial"  # Start on the initial screen
     if "nickname" not in st.session_state:
         st.session_state.nickname = ""  # Initialize nickname
+    if "sentence_range" not in st.session_state:
+        st.session_state.sentence_range = (1, 10)  # 기본 문장 범위 초기화
 
 # 문장에서 랜덤으로 단어를 빈칸으로 만드는 함수
 def create_blank_sentence(sentence):
@@ -93,7 +95,7 @@ def main():
                 # 모든 정보가 입력되면 다음 화면으로 넘어감
                 st.session_state.screen = "question"
                 st.session_state.nickname = nickname
-                st.session_state.sentence_range = sentence_range
+                st.session_state.sentence_range = sentence_range  # 범위 저장
                 st.session_state.goal_num_questions = goal_num_questions
                 st.session_state.goal_score = goal_score
                 st.session_state.start_time = time.time()  # Start timer when the game begins
