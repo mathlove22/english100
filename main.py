@@ -65,6 +65,9 @@ def create_blank_sentence(sentence):
 
 # 새로운 문제 로드
 def load_new_question(sentences):
+    if not sentences:
+        st.error("선택한 범위에 해당하는 문장이 없습니다. 범위를 다시 선택하세요.")
+        return
     sentence = random.choice(sentences)
     blank_sentence, correct_answer = create_blank_sentence(sentence["english"])
     st.session_state.current_sentence = sentence
