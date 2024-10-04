@@ -5,9 +5,14 @@ import time
 import json
 
 # CSV 또는 JSON 파일에서 문장 데이터를 불러오는 함수
-def load_sentences_from_csv(file_path):
-    df = pd.read_csv(file_path)
-    return df.to_dict(orient='records')
+def load_sentences_from_json(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            sentences = json.load(f)
+        return sentences
+    except FileNotFoundError:
+        st.error(f"{file_path} 파일을 찾을 수 없습니다.")
+        return []
 
 # JSON 파일에 기록을 저장하는 함수
 def save_results_to_json(filename, results):
