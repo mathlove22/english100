@@ -4,28 +4,36 @@ import pandas as pd
 import time
 import json
 
-# CSV 또는 JSON 파일에서 문장 데이터를 불러오는 함수
+# JSON 파일에서 문장 데이터를 불러오는 함수
 def load_sentences_from_json(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            sentences = json.load(f)
+            content = f.read().strip()  # 파일에서 읽어온 데이터를 공백 제거
+            if content:  # 내용이 있을 경우
+                sentences = json.loads(content)
+            else:
+                st.error(f"{file_path} 파일이 비어 있습니다.")
+                sentences = []
         return sentences
     except FileNotFoundError:
         st.error(f"{file_path} 파일을 찾을 수 없습니다.")
+        return []
+    except json.JSONDecodeError:
+        st.error(f"{file_path} 파일의 JSON 형식이 잘못되었습니다.")
         return []
 
 # JSON 파일에 기록을 저장하는 함수
 def save_results_to_json(filename, results):
     try:
-        with open(filename, 'r') as f:
+        with open(filename, 'r', encoding='utf-8') as f:
             data = json.load(f)
-    except FileNotFoundError:
-        data = []
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = []  # 파일이 없거나 JSON 형식이 잘못된 경우 빈 리스트로 초기화
     
     data.append(results)
     
-    with open(filename, 'w') as f:
-        json.dump(data, f, indent=4)
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
 
 # 세션 상태 초기화 함수
 def initialize_session_state():
