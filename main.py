@@ -64,7 +64,7 @@ def main():
     st.title("영어 학습: 빈칸 채우기")
     
     # 문장 데이터를 불러오기
-    sentences = load_sentences_from_csv('sentences.csv')
+    sentences = load_sentences_from_csv('sentence03.csv')
     
     # 세션 상태 초기화
     initialize_session_state()
