@@ -92,6 +92,11 @@ def main():
     sentence_range = st.slider("문장 범위를 선택하세요", 1, 100, (1, 10))
     filtered_sentences = [s for s in sentences if sentence_range[0] <= s["number"] <= sentence_range[1]]
     
+    # 필터링된 문장이 없는 경우
+    if not filtered_sentences:
+        st.warning(f"선택한 범위({sentence_range[0]} ~ {sentence_range[1]})에 해당하는 문장이 없습니다. 범위를 다시 선택하세요.")
+        return
+
     # 목표 설정
     goal_num_questions = st.number_input("맞추고 싶은 문제 수", min_value=1, value=10)
     goal_score = st.number_input("목표 점수", min_value=1, value=70)
@@ -105,14 +110,17 @@ def main():
         load_new_question(filtered_sentences)
 
     # 문제와 번역 표시
-    st.write(f"번역: {st.session_state.current_sentence['korean']}")
-    st.write(f"문장: {st.session_state.blank_sentence}")
+    if st.session_state.current_sentence:
+        st.write(f"번역: {st.session_state.current_sentence['korean']}")
+        st.write(f"문장: {st.session_state.blank_sentence}")
+    else:
+        st.warning("문제를 불러오지 못했습니다. 다시 시도하세요.")
     
     # 사용자 입력
     user_input = st.text_input("정답 입력", key=f"user_input_{st.session_state.input_key}")
     
     # 제출 버튼
-    if st.button("제출"):
+    if st.button("제출") and st.session_state.correct_answer:
         st.session_state.total_attempts += 1
         if user_input.strip().lower() == st.session_state.correct_answer.strip().lower():
             st.session_state.correct_attempts += 1
@@ -147,3 +155,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
