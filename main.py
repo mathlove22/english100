@@ -46,6 +46,8 @@ def initialize_session_state():
         st.session_state.time_spent = 0
     if "screen" not in st.session_state:
         st.session_state.screen = "initial"  # Start on the initial screen
+    if "nickname" not in st.session_state:
+        st.session_state.nickname = ""  # Initialize nickname
 
 # 문장에서 랜덤으로 단어를 빈칸으로 만드는 함수
 def create_blank_sentence(sentence):
@@ -76,7 +78,7 @@ def main():
     if st.session_state.screen == "initial":
         # 초기 화면
         st.write("이름, 문장 범위, 문제 수, 목표 점수를 입력하세요.")
-        nickname = st.text_input("닉네임 입력", key="nickname")
+        nickname = st.text_input("닉네임 입력", key="nickname_input")
         
         # 문장 범위 선택
         sentence_range = st.slider("문장 범위를 선택하세요", 1, 100, (1, 10))
@@ -84,12 +86,17 @@ def main():
         goal_score = st.number_input("목표 점수", min_value=1, value=70)
         
         if st.button("시작하기"):
-            # 모든 정보가 입력되면 다음 화면으로 넘어감
-            st.session_state.screen = "question"
-            st.session_state.nickname = nickname
-            st.session_state.sentence_range = sentence_range
-            st.session_state.goal_num_questions = goal_num_questions
-            st.session_state.goal_score = goal_score
+            # 유효성 검사 추가
+            if not nickname.strip():
+                st.error("닉네임을 입력하세요.")
+            else:
+                # 모든 정보가 입력되면 다음 화면으로 넘어감
+                st.session_state.screen = "question"
+                st.session_state.nickname = nickname
+                st.session_state.sentence_range = sentence_range
+                st.session_state.goal_num_questions = goal_num_questions
+                st.session_state.goal_score = goal_score
+                st.session_state.start_time = time.time()  # Start timer when the game begins
 
     elif st.session_state.screen == "question":
         # 문장 데이터를 불러오기
