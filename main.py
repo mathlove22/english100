@@ -8,18 +8,13 @@ import json
 def load_sentences_from_json(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read().strip()  # 파일에서 읽어온 데이터를 공백 제거
-            if content:  # 내용이 있을 경우
-                sentences = json.loads(content)
-            else:
-                st.error(f"{file_path} 파일이 비어 있습니다.")
-                sentences = []
+            sentences = json.load(f)
         return sentences
     except FileNotFoundError:
         st.error(f"{file_path} 파일을 찾을 수 없습니다.")
         return []
-    except json.JSONDecodeError:
-        st.error(f"{file_path} 파일의 JSON 형식이 잘못되었습니다.")
+    except json.JSONDecodeError as e:
+        st.error(f"JSON 디코딩 오류: {str(e)}")
         return []
 
 # JSON 파일에 기록을 저장하는 함수
